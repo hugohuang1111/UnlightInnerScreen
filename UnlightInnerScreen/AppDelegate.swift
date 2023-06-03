@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import LaunchAtLogin
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuExtrasConfigurator: MacExtrasConfigurator?
@@ -15,11 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         private var statusBar: NSStatusBar
         private var statusItem: NSStatusItem
+        private var autoLaunchMItem: NSMenuItem;
 
         // MARK: - Lifecycle
         override init() {
             statusBar = NSStatusBar.system
             statusItem = statusBar.statusItem(withLength: NSStatusItem.squareLength)
+            autoLaunchMItem = NSMenuItem()
             
             super.init()
             
@@ -30,8 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         private func createMenu() {
             if let statusBarButton = statusItem.button {
                 statusBarButton.image = NSImage(
-                    systemSymbolName: "hammer",
-                    accessibilityDescription: nil
+                    named: "MenuIcon"
                 )
                 let lightOff = NSMenuItem()
                 lightOff.title = "LightOff"
@@ -41,6 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 lightOn.title = "LightOn"
                 lightOn.target = self
                 lightOn.action = #selector(Self.onItemLightOn(_:))
+                let autoLaunch = autoLaunchMItem
+                autoLaunch.title = self.autoLaunchStr()
+                autoLaunch.target = self
+                autoLaunch.action = #selector(Self.onItemAutoLaunch(_:))
                 let exit = NSMenuItem()
                 exit.title = "Quit"
                 exit.keyEquivalent = "q"
@@ -50,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let m = NSMenu()
                 m.addItem(lightOff)
                 m.addItem(lightOn)
+                m.addItem(autoLaunch)
                 m.addItem(exit)
                 statusItem.menu = m
             }
@@ -62,12 +69,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         @objc private func onItemLightOn(_ sender: Any?) {
             self.innerScreenBrightness = 1;
         }
+        @objc private func onItemAutoLaunch(_ sender: Any?) {
+            LaunchAtLogin.isEnabled = !LaunchAtLogin.isEnabled
+            autoLaunchMItem.title = self.autoLaunchStr()
+        }
         @objc private func onItemExit(_ sender: Any?) {
             NSApp.terminate(self)
         }
         
         // MARK: - Privates
-        public var innerScreenBrightness: Float {
+        private var innerScreenBrightness: Float {
             get {
                 var brightness: Float = 0
                 var iterator: io_iterator_t = 0
@@ -93,6 +104,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         break;
                     }
                 }
+            }
+        }
+        
+        private func autoLaunchStr() -> String {
+            if (LaunchAtLogin.isEnabled) {
+                return "AutoLaunch(√)"
+            } else {
+                return "AutoLaunch(×)"
             }
         }
         
